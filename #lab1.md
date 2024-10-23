@@ -139,8 +139,15 @@ and then cd sqlmap
   ![alt text](image-63.png)
   - Content
   ![alt text](image-62.png)
-- After that i will prepare file hash.txt by copy this file `C:\Users\ToanKhoa\AppData\Local\Temp\sqlmap1sem5xjz21548\sqlmaphashes-mnuhm7hu.txt
-` and store in désktop
+- After that i will prepare this file `C:\Users\ToanKhoa\AppData\Local\Temp\sqlmap1sem5xjz21548\sqlmaphashes-mnuhm7hu.txt
+```
+fdbe918bdae83000aa54747fc95fe0470fff4976
+b78ed97677c161c1c82c142906674ad15242b2d4
+a3c50276cb120637cca669eb38fb9928b017e9ef
+995b8b8c183f349b3cab0ae7fccd39133508d2af
+99343bff28a7bb51cb6f22cb20a618701a2c2f58
+a5bdf35a1df4ea895905f6f6618e83951a6effc0
+```
 - To continue with process , i go into the path: `D:\john-1.9.0-jumbo-1-win64\run>` and use this command `john --show --format=Raw-SHA1 "C:\Users\ToanKhoa\AppData\Local\Temp\sqlmap1sem5xjz21548\sqlmaphashes-mnuhm7hu.txt"`
 ![alt text](image-64.png)
 - Result:
