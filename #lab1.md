@@ -148,7 +148,7 @@ a3c50276cb120637cca669eb38fb9928b017e9ef
 99343bff28a7bb51cb6f22cb20a618701a2c2f58
 a5bdf35a1df4ea895905f6f6618e83951a6effc0
 ```
-- To continue with process , i go into the path: `D:\john-1.9.0-jumbo-1-win64\run>` and use this command `john --show --format=Raw-SHA1 "C:\Users\ToanKhoa\AppData\Local\Temp\sqlmap1sem5xjz21548\sqlmaphashes-mnuhm7hu.txt"`
+- To continue with process , i go into the path: `D:\john-1.9.0-jumbo-1-win64\run>` and use this command`john --incremental --fork=4 --format=Raw-SHA1 "C:\Users\ToanKhoa\AppData\Local\Temp\sqlmap1sem5xjz21548\sqlmaphashes-mnuhm7hu.txt"` and to show password use: `john --show --format=Raw-SHA1 "C:\Users\ToanKhoa\AppData\Local\Temp\sqlmap1sem5xjz21548\sqlmaphashes-mnuhm7hu.txt"`
 ![alt text](image-64.png)
 - Result:
 ![alt text](image-65.png)
