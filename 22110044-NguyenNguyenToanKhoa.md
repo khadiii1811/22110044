@@ -5,31 +5,33 @@ Implement public-key based authentication step-by-step with openssl according th
 
 **Answer 1**:
 
-1. Setup
+1. **Setup**
 **1.1 we have a network with two computers:**
 ![alt text](image-79.png)
 - Alice : Ip 10.9.0.5
 - Bob : Ip 10.9.0.6
-
 **1.2 First , We go to create a texyt file**
 ![alt text](image-80.png)
 
-2. Key-generation
-   1. Generate RSA key pair (Bob's machine)
+2. **Key-generation**
+   1. **Generate RSA key pair (Bob's side)**
     ```openssl genpkey -algorithm RSA -out keypair.pem -pkeyopt rsa_keygen_bits:2048 ```
-    - ``openssl genrsa``: Generates an RSA private key.
+    - ``openssl genpkey``: The genpkey command in OpenSSL is used to generate a new private key. It is a general-purpose command to generate private keys for different cryptographic algorithms, including RSA.
+    - ``genpkey``creates the private key, and you can later extract the corresponding public key from it.
+    - ``-algorithm RSA``: This option specifies the cryptographic algorithm to use for key generation. Here, it is set to RSA, which is one of the most common public-key cryptosystems.
+    RSA (Rivest-Shamir-Adleman) is an asymmetric encryption algorithm, meaning it uses a pair of keys: a public key to encrypt data and a private key to decrypt it.
     - ``-out keypair.pem``: Saves the private key to keypair.pem.
     - ``2048``: Sets the RSA key length to 2048 bits, which balances security and performance.
     ![alt text](image-82.png)
-    2. Extract public key
+    1. **Extract public key**
     - From the private key, extract the public key:
     - ```openssl rsa -pubout -in keypair.pem -out public_key.pem```
     ![alt text](image-83.png)
-    3. Transfer public key to Alice
+    1. **Transfer public key to Alice**
        1. Grant  permissions
         - Before transferring, ensure the public key file is accessible
         - ```chmod 777 /home```
-        2. Send to Send Public Key to Alice
+        1. Send to Send Public Key to Alice
         Transfer Bob’s public key to Alice using scp:
         ```scp publickey.crt alice@10.9.0.5:/home```
         ![alt text](image-84.png)
@@ -39,6 +41,41 @@ Implement public-key based authentication step-by-step with openssl according th
         apt install openssh-server
         service ssh start
         ```
+        
+        Try transferring the file again after starting the SSH service.
+        ![alt text](image-85.png)
+        ![alt text](image-86.png)
+    **Result: Alice recieved public key**
+    2. **Alice prepares the Encrypted Daataa**
+       1. **Generate a random symmetric key**
+    Use this command: ``openssl rand -hex 32 > randompassword``
+    Generates a random symmetric key for AES encryption:
+    ![alt text](image-87.png)
+       2. **Encrypt the Text File with AES**
+    Encrypt the file (textfile.txt) using AES encryption and the generated symmetric key.
+    ``openssl enc -aes-256-cbc -in textfile.txt -out file.enc -pass file:/home/randompassword -pbkdf2 -iter 10000``
+       3. **Encrypt the Symmetric Key with RSA**
+    Encrypt the symmetric key using Bob's public RSA key.
+    ``openssl rsautl -encrypt -inkey public_key.pem -pubin -in randompassword -out randompassword.encrypted``
+    ![alt text](image-88.png)
+    3. **Transfer Encrypted Files to Bob**
+    Alice transmits the encrypted data (file.enc) and the encrypted symmetric key (randompassword.encrypted) to Bob.
+    ``scp file.enc randompassword.encrypted bob@10.9.0.6:/home``
+    ![alt text](image-89.png)
+    Bob side: ``ls``
+    ![alt text](image-90.png)
+     4. **Bob Decrypts the Data**
+        1. **Decrypt the Symmetric Key**
+    ``openssl rsautl -decrypt -inkey keypair.pem -in randompassword.encrypted -out randompassword.decrypted``
+    ![alt text](image-92.png)
+        2. **Decrypt the File with the Symmetric Key**
+    ***Bob uses the decrypted symmetric key to decrypt the file:**
+    `` openssl enc -aes-256-cbc -d -in file.enc -out file_decrypted.txt -pass file:/home/randompassword.decrypted -pbkdf2 -iter 10000``
+    ![alt text](image-93.png)
+    
+ ***Result*** 
+ - Complete task : Bob recieved this file 
+    ![alt text](image-94.png)
 # Task 2: Encrypting large message 
 Create a text file at least 56 bytes.
 **Question 1**:
@@ -99,9 +136,9 @@ This script will generate two encrypted files:
 - `message_cfb.enc` (encrypted using CFB mode).
 - `message_ofb.enc` (encrypted using OFB mode).
 ***Result:***
-After running the script, both files were created successfully. The encryption process was confirmed by comparing the sizes of the output files, which contained both the IV and the ciphertext.
+After executing the script, both files were generated successfully. The encryption process was verified by comparing the sizes of the output files, which included both the IV and the ciphertext.
 ![alt text](image-71.png)
-And this is the `message.txt` file and the 2 encryption file. Now you can check the sixe of the output files
+"This is the message.txt file along with the two encrypted files. Now, you can check the sizes of the output files."
 ![alt text](image-72.png)
 #### **Evaluation of Modes**
 | Feature                | **CFB Mode**                          | **OFB Mode**                         |
@@ -117,7 +154,7 @@ Decrypt corrupted file, watch the result and give your comment on Chaining depen
 
 **Answer 2**:
 **Step 1. Modify the 8th byte of the encrypted file**
-The encrypted files (`message_cfb.enc` and `message_ofb.enc`) were altered by modifying the 8th byte of each file. This simulates ciphertext corruption.
+The encrypted files (message_cfb.enc and message_ofb.enc) were modified by changing the 8th byte of each file, simulating corruption in the ciphertext.
 I will create a `corrupt.py` file for this purpose:
 ```python
 def corrupt_file(input_file, output_file, byte_position):
@@ -160,12 +197,12 @@ The outputs of the corrupted files were compared to the original plaintext to an
 Then the result we get: 
 ![alt text](image-73.png)
 #### **Result**
-When i compared those 2 output files(message_cfb_corrupted.enc and message_ofb_corrupted.enc), i have a conclusion: 
+When I compared the two output files (message_cfb_corrupted.enc and message_ofb_corrupted.enc), I concluded that:
 ![alt text](image-74.png)
 | **Mode** | **Behavior**                                                                                                                                                        |
 | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **CFB**  | The corruption in the 8th byte caused errors in the decrypted plaintext for the corresponding block and the next block. However, subsequent blocks were unaffected. |
-| **OFB**  | The corruption in the 8th byte affected only the corresponding byte in the plaintext. No further errors were propagated, as OFB does not use chaining.              |
+| **CFB**  | The corruption in the 8th byte caused errors in the decrypted plaintext for both the affected block and the following block. However, the rest of the blocks remained unaffected. |
+| **OFB**  | The corruption in the 8th byte impacted only the corresponding byte in the plaintext. No additional errors were introduced, as OFB does not rely on chaining.           |
 
 
 
