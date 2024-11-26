@@ -6,7 +6,7 @@ Implement public-key based authentication step-by-step with openssl according th
 **Answer 1**:
 
 1. **Setup**
-**1.1 we have a network with two computers:**
+1.1 **We have a network with two computers:**
 ![alt text](image-79.png)
 - Alice : Ip 10.9.0.5
 - Bob : Ip 10.9.0.6
@@ -81,129 +81,77 @@ Create a text file at least 56 bytes.
 **Question 1**:
 Encrypt the file with aes-256 cipher in CFB and OFB modes. How do you evaluate both cipher as far as error propagation and adjacent plaintext blocks are concerned. 
 **Answer 1**:
-***Step 1: Create a Text File***
-Firstly, I have created a `message.txt` with a size of at least 56 bytes:
+***Step1: Enrypt file with cfb mode:***
+- Before this purpose , we go to create iv file
+```openssl rand -hex 16 > iv```
+Then 
+```openssl enc -aes-256-cfb -in textfile.txt -out ciphertext_cfb.bin -K $(cat randompassword) -iv $(cat iv)```
 
-```bash
-Hello, my name is Nguyen Nguyen Toan Khoa, my id is 22110044, and I happy to help you. Hope you having a wonderful day! Today, I have a really important test but my health is not OK. Say bye!
-```
-***Step 2: Write and Execute the Encryption Script***
-The next step involves using Python with the pycryptodome library to implement the encryption. The key elements will include:
-``` pip install pycryptodome ```
-- **Key:** A 256-bit (32-byte) key to meet AES-256 requirements.
-- **IV:** A random 16-byte value to ensure unique encryption for every operation.
-- **Modes:**
-  - CFB (Cipher Feedback)
-  - OFB (Output Feedback)
+***Step2: Encrypt file with ofb mode:***
+```openssl enc -aes-256-ofb -in textfile.txt -out ciphertext_ofb.bin -K $(cat randompassword) -iv $(cat iv)```
+![alt text](image-95.png)
 
-And here is the encryption process included:
-1. Loading the plaintext file.
-2. Encrypting the file using AES-256 in both modes.
-3. Writing the ciphertext to separate files: `message_cfb.enc` and `message_ofb.enc`.
-##### **Code Overview**
-At here, i have created `encrypt_message.py` file to do the encryption in 2 modes.
+***Explain mode***
 
-```python
-from Crypto.Cipher import AES
-from Crypto.Util.Padding import pad
-import os
-
-# Load the plaintext file
-with open("message.txt", "rb") as f:
-    plaintext = f.read()
-
-# Define a 256-bit key (32 bytes) and a random IV (16 bytes)
-key = b"mysecretkeyissupersecuren32bytes"  
-iv = os.urandom(16)
-
-# Encrypt using AES-256 in CFB mode
-cipher_cfb = AES.new(key, AES.MODE_CFB, iv=iv)
-ciphertext_cfb = cipher_cfb.encrypt(plaintext)
-with open("message_cfb.enc", "wb") as f:
-    f.write(iv + ciphertext_cfb)
-
-# Encrypt using AES-256 in OFB mode
-cipher_ofb = AES.new(key, AES.MODE_OFB, iv=iv)
-ciphertext_ofb = cipher_ofb.encrypt(plaintext)
-with open("message_ofb.enc", "wb") as f:
-    f.write(iv + ciphertext_ofb)
-
-print("Encryption complete! Files saved:")
-print("- message_cfb.enc (CFB mode)")
-print("- message_ofb.enc (OFB mode)")
-```
-This script will generate two encrypted files: 
-- `message_cfb.enc` (encrypted using CFB mode).
-- `message_ofb.enc` (encrypted using OFB mode).
-***Result:***
-After executing the script, both files were generated successfully. The encryption process was verified by comparing the sizes of the output files, which included both the IV and the ciphertext.
-![alt text](image-71.png)
-"This is the message.txt file along with the two encrypted files. Now, you can check the sizes of the output files."
-![alt text](image-72.png)
-#### **Evaluation of Modes**
-| Feature                | **CFB Mode**                          | **OFB Mode**                         |
-| ---------------------- | ------------------------------------- | ------------------------------------ |
-| **Error Propagation**  | Affects current and next block        | Affects only corresponding bit       |
-| **Plaintext Handling** | Conceals patterns; feedback-dependent | Conceals patterns; keystream-based   |
-| **Use Case**           | Streaming, real-time communication    | File transfers, high error tolerance |
-
+**CFB Mode** 
+![alt text](image-99.png)
+- Error Propagation: High (cascades to next blocks)
+  - Cause: CFB uses a feedback mechanism where each ciphertext block influences the next. A single-bit error in the ciphertext will disrupt the decryption of both the current and subsequent plaintext blocks.
+  - Impact: This makes CFB vulnerable to errors in environments where data integrity cannot be guaranteed, as even small transmission errors can corrupt multiple blocks.
+  - Example: If one bit in the ciphertext block is corrupted, plaintext blocks derived from this and subsequent ciphertext will be incorrect.
+- Block Dependency: Strong (feedback required)
+  - Cause: CFB encryption depends on the previous ciphertext block for its operation.
+  - Impact: This strong dependency ensures robust encryption but also causes errors to cascade.
+  - Example: If the ciphertext of block 2 is altered, the decryption of blocks 2 and 3 will fail.
+  
+**OFB Mode**
+![alt text](image-100.png)
+- Error Propagation:Low (isolated to one byte)
+  - Cause: OFB generates a keystream independent of the ciphertext, so errors in ciphertext do not propagate.
+  - Impact: An error in the ciphertext affects only the corresponding plaintext byte, making OFB suitable for environments prone to transmission errors.
+  - Example: Corrupting a byte in the ciphertext results in corruption of only the corresponding plaintext byte.
+- Block Dependency: Weak (blocks independent)
+  - Cause: The keystream is generated independently of plaintext and ciphertext.
+  - Impact: Each block operates independently, so errors in one block do not affect others.
+  - Example: Corrupting ciphertext block 2 only affects plaintext block 2, leaving other blocks intact.
 ___
 **Question 2**:
 Modify the 8th byte of encrypted file in both modes (this emulates corrupted ciphertext).
 Decrypt corrupted file, watch the result and give your comment on Chaining dependencies and Error propagation criteria.
 
 **Answer 2**:
-**Step 1. Modify the 8th byte of the encrypted file**
-The encrypted files (message_cfb.enc and message_ofb.enc) were modified by changing the 8th byte of each file, simulating corruption in the ciphertext.
-I will create a `corrupt.py` file for this purpose:
-```python
-def corrupt_file(input_file, output_file, byte_position):
-    with open(input_file, "rb") as f:
-        data = bytearray(f.read())
-    data[byte_position] ^= 0xFF  # Flip all bits of the 8th byte
-    with open(output_file, "wb") as f:
-        f.write(data)
+**Step 1. Connect to Alice container**
+``docker exec -it alice-10.9.0.5 bash``
+- Alice: IP alice-10.9.0.5
 
-# Corrupt the 8th byte
-corrupt_file("message_cfb.enc", "message_cfb_corrupted.enc", 8)
-corrupt_file("message_ofb.enc", "message_ofb_corrupted.enc", 8)
+![alt text](image-98.png)
 
-print("Corruption complete! Files saved:")
-print("- message_cfb_corrupted.enc")
-print("- message_ofb_corrupted.enc")
-```
-**Step 2. Decrypt the corrupted files**
-The corrupted files were decrypted using the original decryption logic for both modes.
-Create `decrypt_message.py` file:
-```python
-def decrypt_file(input_file, key, mode):
-    with open(input_file, "rb") as f:
-        data = f.read()
-    iv, ciphertext = data[:16], data[16:]
-    cipher = AES.new(key, mode, iv=iv)
-    return cipher.decrypt(ciphertext)
+***Step 2. Encrypting the File in AES-256 CFB Mode***
+- Use Initialization Vector(IV) as i created before
+- ```openssl enc -aes-256-cfb -in textfile.txt -out ciphertext_cfb.bin -K $(cat randompassword) -iv $(cat iv)```
+  - **Purpose:** This command encrypts a file (textfile.txt) using the AES-256 algorithm in CFB (Cipher Feedback) mode. It produces an encrypted output (ciphertext_cfb.bin).
 
-# Define the same key used for encryption
-key = b"mysecretkeyissupersecuren32bytes"  
+***Step 3. Encrypting the File in AES-256 OFB Mode***
+- ```openssl enc -aes-256-ofb -in textfile.txt -out ciphertext_ofb.bin -K $(cat randompassword) -iv $(cat iv)```
+  - **Purpose:** This command encrypts a file (textfile.txt) using the AES-256 algorithm in OFB (Output Feedback) mode, generating an encrypted output file (ciphertext_ofb.bin). The OFB mode is a block cipher mode where the output of the encryption process is used as a keystream to encrypt the plaintext. 
+  
+***Step 4.Modifying the 8th Byte in the Ciphertext***
+- ``dd if=/dev/zero bs=1 count=1 seek=7 conv=notrunc of=ciphertext_cfb.bin`` for CFB Encrypted file
+- ``dd if=/dev/zero bs=1 count=1 seek=7 conv=notrunc of=ciphertext_ofb.bin`` for OFB Encrypted file 
+- ![alt text](image-96.png)
+  - **Purpose:** The purpose of the dd command in Step 4 is to simulate the corruption of the ciphertext by modifying a specific byte (in this case, the 8th byte) of the encrypted file. This emulates a real-world scenario where ciphertext might become corrupted during transmission or storage. By modifying a single byte, you can observe how this corruption propagates during decryption and how it affects the resulting plaintext in different encryption modes (CFB vs. OFB).
+  
 
-# Decrypt corrupted files
-plaintext_cfb_corrupted = decrypt_file("message_cfb_corrupted.enc", key, AES.MODE_CFB)
-plaintext_ofb_corrupted = decrypt_file("message_ofb_corrupted.enc", key, AES.MODE_OFB)
+**After modifying we go to view it**
+![alt text](image-97.png)
 
-print("Decryption completed for corrupted files.")
-```
-**Step 3. Observe and analyze the results**
-The outputs of the corrupted files were compared to the original plaintext to analyze how the corruption affected each mode.
-Then the result we get: 
-![alt text](image-73.png)
-#### **Result**
-When I compared the two output files (message_cfb_corrupted.enc and message_ofb_corrupted.enc), I concluded that:
-![alt text](image-74.png)
-| **Mode** | **Behavior**                                                                                                                                                        |
-| -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **CFB**  | The corruption in the 8th byte caused errors in the decrypted plaintext for both the affected block and the following block. However, the rest of the blocks remained unaffected. |
-| **OFB**  | The corruption in the 8th byte impacted only the corresponding byte in the plaintext. No additional errors were introduced, as OFB does not rely on chaining.           |
+So Observation: 
+- CFB (Cipher Feedback) Mode: The decrypted output (decrypted_cfb_corrupted.txt) appears to be garbled with unreadable characters, but there’s a consistent pattern that suggests multiple blocks of data have been affected. The CFB mode causes error propagation. This means that the corruption of one byte in the ciphertext will not only affect the corresponding plaintext byte but will also propagate to other adjacent blocks. As a result, more data is corrupted in CFB mode compared to OFB mode.
+- OFB (Output Feedback) Mode: The decrypted output (decrypted_ofb_corrupted.txt) also shows corruption, but it seems more localized. The byte that was modified affects only the corresponding byte in the decrypted plaintext, with fewer subsequent changes compared to CFB. This is characteristic of OFB mode, where error propagation is minimal, and only the corrupted byte will be affected.
 
+**Conclusion**
+- CFB Mode: The error affects more than one block, showing how the modification of a single byte in the ciphertext propagates throughout the entire block of plaintext. This makes CFB less tolerant of corruption compared to OFB.
+- OFB Mode: The error is confined to the specific byte that was corrupted, demonstrating OFB's robustness in handling transmission errors.
 
 
 
